@@ -323,11 +323,12 @@ export function CreateListingPage() {
   
     setFormData(prev => ({
       ...prev,
-      images: [...prev.images, ...files]
+      images: [...files, ...prev.images]
     }));
+
+    setImagePreviews(prev => [...newPreviews, ...prev]);
   
-    setImagePreviews(prev => [...prev, ...newPreviews]);
-  
+    // setImagePreviews(prev => [...prev, ...newPreviews]);
     setErrors(prev => ({ ...prev, images: undefined }));
   };
   
@@ -606,7 +607,11 @@ export function CreateListingPage() {
                     <h2 className="mb-4 text-xl font-semibold dark:text-white">{formData.title}</h2>
                     {imagePreviews.length > 0 && (
                       <div className="mb-4 overflow-hidden rounded-lg">
-                        <img src={imagePreviews[0]} alt="Main property image" className="h-64 w-full object-contain"/>
+                        <img 
+                          src={imagePreviews[0]} 
+                          alt="Main property image" 
+                          className="h-64 w-full object-contain"
+                        />
                       </div>
                     )}
                     <div className="mb-4 grid grid-cols-2 gap-4">
