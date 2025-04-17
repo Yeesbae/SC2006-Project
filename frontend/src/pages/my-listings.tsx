@@ -129,6 +129,7 @@ export function MyListingsPage() {
           }
         );
         setRequests(response.data);
+        console.log(requests)
       } catch (error) {
         console.error("Error fetching property requests:", error);
         setRequestsError("Failed to load property requests");
@@ -333,32 +334,45 @@ export function MyListingsPage() {
           </div>
         ) : (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {requests.map((req) => (
-              <div
-                key={req.id}
-                className="overflow-hidden rounded-lg border bg-white shadow-sm transition-shadow hover:shadow-md cursor-pointer"
-                onClick={() => navigate(`/requests/${req.id}`)}
-              >
-                <div className="relative">
-                  <img
-                    src={req.images && req.images[0]}
-                    alt={req.title}
-                    className="h-48 w-full object-contain"
-                  />
+            {requests.map((req) => {
+              const imageUrl = req.images && req.images.length > 0 
+              ? req.images[0].startsWith('http') 
+                ? req.images[0] 
+                : `http://localhost:8000${req.images[0]}`
+              : '/placeholder.jpg';
+    
+              return (
+                <div
+                  key={req.id}
+                  className="overflow-hidden rounded-lg border bg-white shadow-sm transition-shadow hover:shadow-md cursor-pointer"
+                  onClick={() => navigate(`/requests/${req.id}`)}
+                >
+                  <div className="relative">
+                    <img
+                      // src={req.images && req.images[0]}
+                      src={imageUrl}
+                      alt={req.title}
+                      className="h-48 w-full object-contain"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.src = '/placeholder.jpg';
+                      }}
+                    />
+                  </div>
+                  <div className="p-4">
+                    <h3 className="mb-2 text-xl font-semibold">
+                      {req.title || "No title"}
+                    </h3>
+                    <p className="mb-4 text-gray-600">
+                      {req.location || "No location"}
+                    </p>
+                    <p className="mb-4 text-2xl font-bold text-blue-600">
+                      ${req.price ? req.price : 0}/month
+                    </p>
+                  </div>
                 </div>
-                <div className="p-4">
-                  <h3 className="mb-2 text-xl font-semibold">
-                    {req.title || "No title"}
-                  </h3>
-                  <p className="mb-4 text-gray-600">
-                    {req.location || "No location"}
-                  </p>
-                  <p className="mb-4 text-2xl font-bold text-blue-600">
-                    ${req.price ? req.price : 0}/month
-                  </p>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
