@@ -24,3 +24,22 @@ class RegisterUserSerializer(serializers.ModelSerializer):
 
 class LogoutSerializer(serializers.Serializer):
     pass
+
+class UpdateUserDetailsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['username', 'email', 'name', 'password']
+        extra_kwargs = {
+            'password': {'write_only': True}
+        }
+    
+    def update(self, instance, validated_data):
+        # instance.username = validated_data.get('username', instance.username)
+        instance.email = validated_data.get('email', instance.email)
+        instance.name = validated_data.get('name', instance.name)
+        
+        password = validated_data.get('password')
+        if password:
+            instance.set_password(password)
+        instance.save()
+        return instance

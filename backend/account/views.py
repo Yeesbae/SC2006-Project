@@ -49,19 +49,29 @@ class RegisterUserView(generics.CreateAPIView):
             )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-# update a user's profile
-class UpdateUserView(generics.UpdateAPIView):
-    queryset = User.objects.all()
-    serializer_class = UserSerializer
+# update user's details (including password)
+class UpdateUserDetailsView(generics.UpdateAPIView):
+    serializer_class = UpdateUserDetailsSerializer
     permission_classes = [IsAuthenticated]
     authentication_classes = [TokenAuthentication]
     
     def get_object(self):
         return self.request.user
-    def put(self, request, *args, **kwargs):
-        return self.update(request, *args, **kwargs)
-    def patch(self, request, *args, **kwargs):
-        return self.partial_update(request, *args, **kwargs)
+    
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=True)
+        
+        if serializer.is_valid():
+            user = serializer.save()
+            
+            return Response({
+                "message": "User details updated successfully",
+                "username": user.username,
+                "email": user.email,
+                "name": user.name,
+            }, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 # delete a user's profile
 class DeleteUserView(generics.DestroyAPIView):
