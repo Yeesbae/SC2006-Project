@@ -103,7 +103,7 @@ class PropertyRequest(models.Model):
     property = models.ForeignKey(Property, on_delete=models.CASCADE, null=True, blank=True)
     
     # user = models.ForeignKey(User, on_delete=models.CASCADE)
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='property_requests', default=None)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='property_requests', default=None, null=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
     # Snapshot fields for new property requests.

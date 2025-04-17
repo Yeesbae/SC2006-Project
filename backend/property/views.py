@@ -225,10 +225,14 @@ class CreatePropertyRequestView(generics.CreateAPIView):
 # request for updating a property
 class UpdatePropertyRequestView(generics.CreateAPIView):
     queryset = PropertyRequest.objects.all()
-    serializer_class = UpdatePropertyRequestSerializer
     permission_classes = [IsAuthenticated]
     authentication_classes = [TokenAuthentication]
-    
+        
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context['request'] = self.request
+        return context
+
     def create(self, request, *args, **kwargs):
         # check if the request user is the owner of the property
         property_id = request.data.get('property_id')
@@ -240,6 +244,25 @@ class UpdatePropertyRequestView(generics.CreateAPIView):
                     },
                     status=status.HTTP_403_FORBIDDEN
                 )
+        
+            request_data = request.data.copy()
+            request_data['request_type'] = 'update'
+            request_data['property'] = property_obj.id
+            request_data['user'] = request.user.id
+
+            serializer = self.get_serializer(data=request_data)
+
+            if serializer.is_valid():
+                # property_request = serializer.save(user=request.user, request_type='update', property=property_obj)
+                property_request = serializer.save()
+                return Response({
+                        "message": "Property update request created successfully",
+                        "property_request": serializer.data,
+                        "id": property_request.id
+                    },
+                    status=status.HTTP_201_CREATED
+                )
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         except Property.DoesNotExist:
             return Response({
                     "message": "Property not found"
@@ -247,15 +270,11 @@ class UpdatePropertyRequestView(generics.CreateAPIView):
                 status=status.HTTP_404_NOT_FOUND
             )
         
-        serializer = self.get_serializer(data=request.data)
+    def post(self, request):
+        serializer = UpdatePropertySerializer(data=request.data, context={'request': request})
         if serializer.is_valid():
-            property_request = serializer.save(user=request.user, request_type='update', property=property_obj)
-            return Response({
-                    "message": "Property update request created successfully",
-                    "property_request": serializer.data
-                },
-                status=status.HTTP_201_CREATED
-            )
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 # view all property requests
@@ -338,14 +357,15 @@ class AcceptPropertyRequestView(generics.GenericAPIView):
                 property_instance = property_serializer.save()
             else:
                 return Response(property_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        
+            pass
         # if request type is update, update the existing property
-        else:
+        elif property_request.request_type == 'update':
             # check if the property exists
             try:
                 print("Updating existing property...")
                 print(property_request.property)
-                property_instance = PropertyRequest.objects.get(id=property_request.property.id)
+                # property_instance = PropertyRequest.objects.get(id=property_request.property.id)
+                property_instance = Property.objects.get(id=property_request.property.id)
                 # Build update data from the property_request snapshot
                 update_data = {
                     "title": property_request.title or property_instance.title,
@@ -370,9 +390,7 @@ class AcceptPropertyRequestView(generics.GenericAPIView):
                 property_serializer = UpdatePropertySerializer(property_instance, data=update_data, partial=True)
                 
                 if property_serializer.is_valid():
-                    
                     property_instance = property_serializer.save()
-                    print("Property Instance: ", property_instance)
                 else:
                     return Response(property_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
             except Property.DoesNotExist:

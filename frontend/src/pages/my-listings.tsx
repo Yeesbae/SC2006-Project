@@ -4,19 +4,8 @@ import { Button } from "../components/ui/button";
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useAuth } from "../components/auth/auth-context";
+import { PropertyRequest, Listing } from "@/types/property";
 // import { c } from 'node_modules/vite/dist/node/types.d-aGj9QkWt'; // Unused import
-
-interface Listing {
-  id: number;
-  owner: number;
-  title: string;
-  status: string;
-  views: number;
-  inquiries: number;
-  price: number;
-  location: string;
-  images: string[];
-}
 
 export function MyListingsPage() {
   const [listings, setListings] = useState<Listing[]>([]);
@@ -31,7 +20,7 @@ export function MyListingsPage() {
   const [favoritesError, setFavoritesError] = useState<string | null>(null);
 
   // New state for property requests
-  const [requests, setRequests] = useState<Listing[]>([]);
+  const [requests, setRequests] = useState<PropertyRequest[]>([]);
   const [requestsLoading, setRequestsLoading] = useState(true);
   const [requestsError, setRequestsError] = useState<string | null>(null);
 
@@ -218,7 +207,7 @@ export function MyListingsPage() {
             >
               <div className="relative">
                 <img
-                  src={listing.images[0]}
+                  src={listing.images?.[0]}
                   alt={listing.title}
                   className="h-48 w-full object-contain"
                 />
@@ -232,8 +221,9 @@ export function MyListingsPage() {
                         : "bg-yellow-100 text-yellow-800"
                     }`}
                   >
-                    {listing.status.charAt(0).toUpperCase() +
-                      listing.status.slice(1)}
+                    {listing.status ? 
+                      listing.status.charAt(0).toUpperCase() + listing.status.slice(1) :
+                      'Unknown'}
                   </span>
                 </div>
               </div>
@@ -291,7 +281,7 @@ export function MyListingsPage() {
               >
                 <div className="relative">
                   <img
-                    src={fav.images[0]}
+                    src={fav.images?.[0]}
                     alt={fav.title}
                     className="h-48 w-full object-contain"
                   />
@@ -335,11 +325,12 @@ export function MyListingsPage() {
         ) : (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {requests.map((req) => {
-              const imageUrl = req.images && req.images.length > 0 
-              ? req.images[0].startsWith('http') 
-                ? req.images[0] 
-                : `http://localhost:8000${req.images[0]}`
-              : '/placeholder.jpg';
+              const firstImage = req.image?.[0] || req.image;
+              const imageUrl = firstImage 
+                ? firstImage.startsWith('http') 
+                  ? firstImage 
+                  : `http://localhost:8000${firstImage}`
+                : '/placeholder.jpg';
     
               return (
                 <div
@@ -351,7 +342,7 @@ export function MyListingsPage() {
                     <img
                       // src={req.images && req.images[0]}
                       src={imageUrl}
-                      alt={req.title}
+                      alt={req.property?.title || req.title || "Property image"}
                       className="h-48 w-full object-contain"
                       onError={(e) => {
                         const target = e.target as HTMLImageElement;
@@ -373,6 +364,50 @@ export function MyListingsPage() {
                 </div>
               );
             })}
+          </div>
+        )}
+      </div>
+      {/* Property Update Requests */}
+      <div className="mt-12">
+        <h2 className="mb-6 text-3xl font-bold">Pending Edit Requests</h2>
+        {requestsLoading ? (
+            <div className="flex justify-center items-center h-64">
+                <p>Loading edit requests...</p>
+            </div>
+        ) : requestsError ? (
+            <div className="mb-4 rounded-md bg-red-50 p-4 text-sm text-red-600">
+                {requestsError}
+            </div>
+        ) : requests.filter(req => req.request_type === 'update').length === 0 ? (
+            <div className="col-span-full text-center py-12">
+                <p className="text-gray-600">
+                    You have no pending edit requests
+                </p>
+            </div>
+        ) : (
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {requests
+              .filter((req): req is PropertyRequest => req.request_type === 'update')
+              .map((req) => (
+                <div
+                    key={req.id}
+                    className="overflow-hidden rounded-lg border bg-white shadow-sm transition-shadow hover:shadow-md cursor-pointer"
+                    onClick={() => navigate(`/requests/${req.id}`)}
+                >
+                  <div className="p-4">
+                    <h3 className="mb-2 text-xl font-semibold">
+                      Update Request for: {req.property?.title || req.title || "Unknown Property"}
+                    </h3>
+                    <p className="mb-4 text-gray-600">
+                        Status: Pending Approval
+                    </p>
+                    <p className="mb-4 text-sm text-gray-500">
+                      Submitted on: {req.created_at ? new Date(req.created_at).toLocaleDateString() : 'Unknown date'}
+                    </p>
+                  </div>
+                </div>
+              ))
+            }
           </div>
         )}
       </div>

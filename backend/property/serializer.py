@@ -24,12 +24,16 @@ class PropertySerializer(serializers.ModelSerializer):
 class UpdatePropertySerializer(serializers.ModelSerializer):
     amenities = serializers.ListField(child=serializers.CharField(), required=False)
     class Meta:
-        model = Property
+        model = PropertyRequest
         fields = '__all__'
         extra_kwargs = {
+            'property': {'required': True},
+            'user_id': {'read_only': True},
+            'request_type': {'read_only': True},
             'title': {'required': False},
             'block': {'required': False},
             'street_name': {'required': False},
+            'location': {'required': False},
             'town': {'required': False},
             'city': {'required': False},
             'zip_code': {'required': False},
@@ -44,6 +48,20 @@ class UpdatePropertySerializer(serializers.ModelSerializer):
             'latitude': {'required': False},
             'longitude': {'required': False},
         }
+    
+    def create(self, validated_data):
+        validated_data['user'] = self.context['request'].user
+        validated_data['request_type'] = 'update'
+
+        property_id = validated_data.pop('property_id', None)
+        if property_id:
+            try:
+                property = Property.objects.get(id=property_id)
+                validated_data['property'] = property
+            except Property.DoesNotExist:
+                raise serializers.ValidationError("Property does not exist")
+        
+        return super().create(validated_data)
 
 # property request serializer
 class PropertyRequestSerializer(serializers.ModelSerializer):
