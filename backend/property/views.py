@@ -8,13 +8,15 @@ from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny
 from rest_framework.parsers import MultiPartParser, FormParser
 
-
+from django.core.files import File
+from django.conf import settings
 from django.shortcuts import get_object_or_404, render
 
 from .models import *
 from .serializer import *
 
 import os
+import shutil
 class TokenVerifyView(APIView):
     permission_classes = [IsAuthenticated]  # Ensure that only authenticated users can access this view
 
@@ -153,12 +155,15 @@ class PropertyDeleteView(generics.DestroyAPIView):
             }, status=status.HTTP_403_FORBIDDEN)
         
         for image in instance.images.all():
-            if image.image and os.path.isfile(image.image.path):
-                os.remove(image.image.path)
+            image_path = image.image.path
+            print("Image Path: ", image_path)
+
+            if os.path.isfile(image_path):
+                os.remove(image_path)
             image.delete()
 
         instance.delete()
-        self.perform_destroy(instance) # not sure will this work with the code above (might need to remove the one above)
+        self.perform_destroy(instance)
         return Response({
             "message": "Property deleted successfully"
         }, status=status.HTTP_200_OK)
@@ -340,7 +345,7 @@ class AcceptPropertyRequestView(generics.GenericAPIView):
             try:
                 print("Updating existing property...")
                 print(property_request.property)
-                property_instance = Property.objects.get(id=property_request.property.id)
+                property_instance = PropertyRequest.objects.get(id=property_request.property.id)
                 # Build update data from the property_request snapshot
                 update_data = {
                     "title": property_request.title or property_instance.title,
@@ -372,15 +377,40 @@ class AcceptPropertyRequestView(generics.GenericAPIView):
                     return Response(property_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
             except Property.DoesNotExist:
                 return Response({"message": "Property not found"}, status=status.HTTP_404_NOT_FOUND)
-        # delete the property request
-        # move image to property_images inside media
+            
         for property_request_image in property_request.images.all():
-            # Step 2: Create new PropertyImage instances
-            PropertyImage.objects.create(property=property_instance, image=property_request_image.image)
-        
+            original_path = property_request_image.image.path
+            original_name = os.path.basename(property_request_image.image.name)
+            
+            new_relative_path = f'property_images/{original_name}'
+            new_full_path = os.path.join(settings.MEDIA_ROOT, new_relative_path)
+            
+            os.makedirs(os.path.dirname(new_full_path), exist_ok=True)
+            
+            shutil.copy2(original_path, new_full_path)
+            
+            with open(new_full_path, 'rb') as f:
+                django_file = File(f)
+                image_instance = PropertyImage(property=property_instance)
+                image_instance.image.save(original_name, django_file, save=True)
+            
+            # Delete the original file and record
+            os.remove(original_path)
+            property_request_image.delete()
+
+            all_files = os.listdir(os.path.join(settings.MEDIA_ROOT, 'property_images'))
+            valid_files = PropertyImage.objects.values_list('image', flat=True)
+
+            for file in all_files:
+                if f'property_images/{file}' not in valid_files:
+                    try:
+                        os.remove(os.path.join(settings.MEDIA_ROOT, 'property_images', file))
+                    except Exception as e:
+                        print(f"Failed to remove {file}: {str(e)}")
+
         # Step 3: Delete PropertyRequestImage instances after moving
         property_request.images.all().delete()
-        property_request.delete()
+        property_request.delete() 
         return Response({"message": "Property request accepted successfully"}, status=status.HTTP_200_OK)
 
 # reject a property request by id (for admin/staff/superuser only)
