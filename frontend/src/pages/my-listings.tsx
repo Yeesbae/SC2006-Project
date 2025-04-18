@@ -11,7 +11,7 @@ export function MyListingsPage() {
   const [listings, setListings] = useState<Listing[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const { user } = useAuth();
+  const { user, setUser } = useAuth();
   const navigate = useNavigate();
 
   // New state for favorites
@@ -23,6 +23,21 @@ export function MyListingsPage() {
   const [requests, setRequests] = useState<PropertyRequest[]>([]);
   const [requestsLoading, setRequestsLoading] = useState(true);
   const [requestsError, setRequestsError] = useState<string | null>(null);
+
+  const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+  const [editedUser, setEditedUser] = useState({
+    first_name: user?.first_name || '',
+    last_name: user?.last_name || '',
+    email: user?.email || '',
+    phone_number: user?.phone_number || ''
+  });
+  const [phoneError, setPhoneError] = useState<string | null>(null);
+  const validateSingaporePhone = (phone: string): boolean => {
+    const sgPhoneRegex = /^(?:\+65|65)?[689]\d{7}$/;
+    return sgPhoneRegex.test(phone.replace(/\s+/g, ''));
+  };
 
   // Fetch created listings
   useEffect(() => {
@@ -130,6 +145,51 @@ export function MyListingsPage() {
     fetchRequests();
   }, [user?.id]);
 
+  const handleSaveChanges = async () => {
+    setIsSaving(true);
+    setSaveSuccess(false);
+
+    const isValidPhone = validateSingaporePhone(editedUser.phone_number);
+    if (!isValidPhone) {
+      setPhoneError('Invalid Singapore phone number. It must start with 6, 8, or 9 and be 8 digits.');
+      setIsSaving(false);
+      return;
+    }
+    
+    try {
+      const response = await axios.patch(
+        `http://localhost:8000/account/update/`,
+        {
+          first_name: editedUser.first_name,
+          last_name: editedUser.last_name,
+          email: editedUser.email,
+          phone_number: editedUser.phone_number,
+        },
+        {
+          headers: {
+            Authorization: `Token ${localStorage.getItem("authToken")}`,
+          },
+        }
+      );
+
+      setUser(response.data);      
+      setIsEditing(false);
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3000);
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      if (axios.isAxiosError(error)) {
+        if (error.response?.status === 400) {
+          setPhoneError('Invalid data. Please check your inputs.');
+        } else {
+          setPhoneError('Failed to update profile. Please try again.');
+        }
+      }
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="container mx-auto px-4 py-8">
@@ -159,13 +219,172 @@ export function MyListingsPage() {
   return (
     <div className="container mx-auto px-4 py-8">
       {/* New Profile Header Section */}
-      <div className="mb-8 rounded-md bg-gray-100 p-6 shadow-sm">
-        <h1 className="mt-2 text-lg text-gray-700">@{user.username}</h1>
-        {user.is_staff && (
-          <span className="mt-2 inline-block rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-800">
-            Admin
-          </span>
-        )}
+      <div className="mb-8 rounded-md bg-white p-6 shadow-sm border">
+        <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
+          {/* User Avatar */}
+          <div className="flex-shrink-0">
+            <div className="h-20 w-20 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-2xl font-bold">
+              {user.first_name?.[0]?.toUpperCase() || user.username?.[0]?.toUpperCase()}
+            </div>
+          </div>
+          
+          {/* User Info */}
+          <div className="flex-grow">
+            {isEditing ? (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label htmlFor="first_name" className="block text-sm font-medium text-gray-700 mb-1">
+                      First Name
+                    </label>
+                    <input
+                      id="first_name"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                      value={editedUser.first_name}
+                      onChange={(e) => setEditedUser({...editedUser, first_name: e.target.value})}
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="last_name" className="block text-sm font-medium text-gray-700 mb-1">
+                      Last Name
+                    </label>
+                    <input
+                      id="last_name"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                      value={editedUser.last_name}
+                      onChange={(e) => setEditedUser({...editedUser, last_name: e.target.value})}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                    Email
+                  </label>
+                  <input
+                    id="email"
+                    type="email"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    value={editedUser.email}
+                    onChange={(e) => setEditedUser({...editedUser, email: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
+                    Singapore Phone Number
+                  </label>
+                  <input
+                    id="phone"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    value={editedUser.phone_number}
+                    onChange={(e) => {
+                      setEditedUser({...editedUser, phone_number: e.target.value});
+                      if (phoneError) setPhoneError(null);
+                    }}
+                    placeholder="e.g. +6581234567 or 91234567"
+                  />
+                  {editedUser.phone_number && !validateSingaporePhone(editedUser.phone_number) && (
+                    <p className="mt-1 text-sm text-yellow-600">This doesn't look like a valid SG number.</p>
+                  )}
+                  {phoneError && (
+                  <p className="mt-1 text-sm text-red-600">{phoneError}</p>
+                )}
+                <p className="mt-1 text-xs text-gray-500">
+                  Must start with 6, 8, or 9 and be 8 digits long (e.g. 91234567)
+                </p>
+                </div>
+              </div>
+            ) : (
+              <>
+                <h1 className="text-2xl font-bold">
+                  {user.first_name && user.last_name 
+                    ? `${user.first_name} ${user.last_name}` 
+                    : user.username}
+                </h1>
+                <p className="text-gray-600">@{user.username}</p>
+                
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {user.is_staff && (
+                    <span className="inline-block rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-800">
+                      Admin
+                    </span>
+                  )}
+                  {user.is_active && (
+                    <span className="inline-block rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-800">
+                      Verified
+                    </span>
+                  )}
+                </div>
+                
+                <div className="mt-4 grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <p className="font-medium text-gray-500">Email</p>
+                    <p>{user.email || 'Not provided'}</p>
+                  </div>
+                  <div>
+                    <p className="font-medium text-gray-500">Member since</p>
+                    <p>
+                      {user.date_joined 
+                        ? new Date(user.date_joined).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric'
+                          })
+                        : 'Unknown'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="font-medium text-gray-500">Phone</p>
+                    <p>
+                      {user.phone_number 
+                        ? user.phone_number.replace(/(\d{4})(\d{4})/, '$1 $2') 
+                        : 'Not provided'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="font-medium text-gray-500">Password</p>
+                    <div className="flex items-center">
+                      <span className="mr-2">••••••••</span>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="text-blue-600 hover:text-blue-800"
+                        onClick={() => {/* Add password change modal here */}}
+                      >
+                        Change
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+          
+          {/* Edit/Save Buttons */}
+          <div className="flex-shrink-0 self-end md:self-center">
+            {isEditing ? (
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={() => setIsEditing(false)}>
+                  <X className="mr-2 h-4 w-4" />
+                  Cancel
+                </Button>
+                <Button onClick={handleSaveChanges}>
+                  <Check className="mr-2 h-4 w-4" />
+                  Save
+                </Button>
+              </div>
+            ) : (
+              <Button variant="outline" onClick={() => setIsEditing(true)}>
+                <Edit className="mr-2 h-4 w-4" />
+                Edit Profile
+              </Button>
+            )}
+            {saveSuccess && (
+              <div className="mb-4 rounded-md bg-green-50 p-4 text-sm text-green-600">
+                Profile updated successfully!
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Created Listings Section */}
