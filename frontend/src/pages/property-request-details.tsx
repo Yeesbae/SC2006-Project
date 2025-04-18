@@ -79,7 +79,6 @@ export function PropertyRequestDetails() {
     try {
       // Prepare the payload based on property info or from user input.
       // Here we assume fixed values; you might derive these from property data.
-      const dummy_flat_type = "";
       var dummy_bedrooms, dummy_bathrooms;
       if (property_rq?.bedrooms == null) {
         dummy_bedrooms = property_rq?.property?.bedrooms;
@@ -237,26 +236,6 @@ export function PropertyRequestDetails() {
 
   return (
     <div className="min-h-screen bg-gray-100">
-      <nav className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex items-center">
-              <Home className="h-6 w-6 text-blue-600" />
-              <span className="ml-2 text-xl font-semibold">
-                Property Details
-              </span>
-            </div>
-            <button
-              onClick={() => navigate("/dashboard")}
-              className="flex items-center text-gray-600 hover:text-gray-900"
-            >
-              <ArrowLeft className="h-5 w-5 mr-1" />
-              Back to Dashboard
-            </button>
-          </div>
-        </div>
-      </nav>
-
       <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         <div className="px-4 py-6 sm:px-0">
           <div className="bg-white shadow overflow-hidden sm:rounded-lg">
