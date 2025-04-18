@@ -86,7 +86,7 @@ export interface PropertyRequest {
   status?: string | null;
   amenities?: any;  // adjust the type if you know the structure
   description?: string | null;
-  image?: string;                   // not sure
+  images?: string[];                   // not sure
   address?: string;                 // not sure
   latitude?: number | null;
   longitude?: number | null;

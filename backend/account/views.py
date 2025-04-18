@@ -88,6 +88,7 @@ class UpdateUserDetailsView(generics.UpdateAPIView):
                 "message": "User details updated successfully",
                 "username": user.username,
                 "email": user.email,
+                "phone_number": user.phone_number,
                 "name": user.name,
             }, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

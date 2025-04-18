@@ -28,20 +28,20 @@ export function MyListingsPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [editedUser, setEditedUser] = useState({
-    first_name: user?.first_name || '',
-    last_name: user?.last_name || '',
-    email: user?.email || '',
-    phone_number: user?.phone_number || ''
+    first_name: user?.first_name || "",
+    last_name: user?.last_name || "",
+    email: user?.email || "",
+    phone_number: user?.phone_number || "",
   });
   const [phoneError, setPhoneError] = useState<string | null>(null);
   const validateSingaporePhone = (phone: string): boolean => {
     const sgPhoneRegex = /^(?:\+65|65)?[689]\d{7}$/;
-    return sgPhoneRegex.test(phone.replace(/\s+/g, ''));
+    return sgPhoneRegex.test(phone.replace(/\s+/g, ""));
   };
 
   const [showPasswordModal, setShowPasswordModal] = useState(false);
-  const [oldPassword, setOldPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
+  const [oldPassword, setOldPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [passwordSuccess, setPasswordSuccess] = useState(false);
 
@@ -139,7 +139,7 @@ export function MyListingsPage() {
           }
         );
         setRequests(response.data);
-        console.log(requests)
+        console.log(requests);
       } catch (error) {
         console.error("Error fetching property requests:", error);
         setRequestsError("Failed to load property requests");
@@ -157,11 +157,13 @@ export function MyListingsPage() {
 
     const isValidPhone = validateSingaporePhone(editedUser.phone_number);
     if (!isValidPhone) {
-      setPhoneError('Invalid Singapore phone number. It must start with 6, 8, or 9 and be 8 digits.');
+      setPhoneError(
+        "Invalid Singapore phone number. It must start with 6, 8, or 9 and be 8 digits."
+      );
       setIsSaving(false);
       return;
     }
-    
+
     try {
       const response = await axios.patch(
         `http://localhost:8000/account/update/`,
@@ -178,7 +180,7 @@ export function MyListingsPage() {
         }
       );
 
-      setUser(response.data);      
+      setUser(response.data);
       setIsEditing(false);
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
@@ -186,9 +188,9 @@ export function MyListingsPage() {
       console.error("Error updating profile:", error);
       if (axios.isAxiosError(error)) {
         if (error.response?.status === 400) {
-          setPhoneError('Invalid data. Please check your inputs.');
+          setPhoneError("Invalid data. Please check your inputs.");
         } else {
-          setPhoneError('Failed to update profile. Please try again.');
+          setPhoneError("Failed to update profile. Please try again.");
         }
       }
     } finally {
@@ -230,40 +232,60 @@ export function MyListingsPage() {
           {/* User Avatar */}
           <div className="flex-shrink-0">
             <div className="h-20 w-20 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-2xl font-bold">
-              {user.first_name?.[0]?.toUpperCase() || user.username?.[0]?.toUpperCase()}
+              {user.first_name?.[0]?.toUpperCase() ||
+                user.username?.[0]?.toUpperCase()}
             </div>
           </div>
-          
+
           {/* User Info */}
           <div className="flex-grow">
             {isEditing ? (
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label htmlFor="first_name" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label
+                      htmlFor="first_name"
+                      className="block text-sm font-medium text-gray-700 mb-1"
+                    >
                       First Name
                     </label>
                     <input
                       id="first_name"
                       className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                       value={editedUser.first_name}
-                      onChange={(e) => setEditedUser({...editedUser, first_name: e.target.value})}
+                      onChange={(e) =>
+                        setEditedUser({
+                          ...editedUser,
+                          first_name: e.target.value,
+                        })
+                      }
                     />
                   </div>
                   <div>
-                    <label htmlFor="last_name" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label
+                      htmlFor="last_name"
+                      className="block text-sm font-medium text-gray-700 mb-1"
+                    >
                       Last Name
                     </label>
                     <input
                       id="last_name"
                       className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                       value={editedUser.last_name}
-                      onChange={(e) => setEditedUser({...editedUser, last_name: e.target.value})}
+                      onChange={(e) =>
+                        setEditedUser({
+                          ...editedUser,
+                          last_name: e.target.value,
+                        })
+                      }
                     />
                   </div>
                 </div>
                 <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label
+                    htmlFor="email"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
                     Email
                   </label>
                   <input
@@ -271,11 +293,16 @@ export function MyListingsPage() {
                     type="email"
                     className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                     value={editedUser.email}
-                    onChange={(e) => setEditedUser({...editedUser, email: e.target.value})}
+                    onChange={(e) =>
+                      setEditedUser({ ...editedUser, email: e.target.value })
+                    }
                   />
                 </div>
                 <div>
-                  <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label
+                    htmlFor="phone"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
                     Singapore Phone Number
                   </label>
                   <input
@@ -283,31 +310,38 @@ export function MyListingsPage() {
                     className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                     value={editedUser.phone_number}
                     onChange={(e) => {
-                      setEditedUser({...editedUser, phone_number: e.target.value});
+                      setEditedUser({
+                        ...editedUser,
+                        phone_number: e.target.value,
+                      });
                       if (phoneError) setPhoneError(null);
                     }}
                     placeholder="e.g. +6581234567 or 91234567"
                   />
-                  {editedUser.phone_number && !validateSingaporePhone(editedUser.phone_number) && (
-                    <p className="mt-1 text-sm text-yellow-600">This doesn't look like a valid SG number.</p>
-                  )}
+                  {editedUser.phone_number &&
+                    !validateSingaporePhone(editedUser.phone_number) && (
+                      <p className="mt-1 text-sm text-yellow-600">
+                        This doesn't look like a valid SG number.
+                      </p>
+                    )}
                   {phoneError && (
-                  <p className="mt-1 text-sm text-red-600">{phoneError}</p>
-                )}
-                <p className="mt-1 text-xs text-gray-500">
-                  Must start with 6, 8, or 9 and be 8 digits long (e.g. 91234567)
-                </p>
+                    <p className="mt-1 text-sm text-red-600">{phoneError}</p>
+                  )}
+                  <p className="mt-1 text-xs text-gray-500">
+                    Must start with 6, 8, or 9 and be 8 digits long (e.g.
+                    91234567)
+                  </p>
                 </div>
               </div>
             ) : (
               <>
                 <h1 className="text-2xl font-bold">
-                  {user.first_name && user.last_name 
-                    ? `${user.first_name} ${user.last_name}` 
+                  {user.first_name && user.last_name
+                    ? `${user.first_name} ${user.last_name}`
                     : user.username}
                 </h1>
                 <p className="text-gray-600">@{user.username}</p>
-                
+
                 <div className="mt-2 flex flex-wrap gap-2">
                   {user.is_staff && (
                     <span className="inline-block rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-800">
@@ -320,45 +354,48 @@ export function MyListingsPage() {
                     </span>
                   )}
                 </div>
-                
+
                 <div className="mt-4 grid grid-cols-2 gap-4 text-sm">
                   <div>
                     <p className="font-medium text-gray-500">Email</p>
-                    <p>{user.email || 'Not provided'}</p>
+                    <p>{user.email || "Not provided"}</p>
                   </div>
                   <div>
                     <p className="font-medium text-gray-500">Member since</p>
                     <p>
-                      {user.date_joined 
-                        ? new Date(user.date_joined).toLocaleDateString('en-US', {
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric'
-                          })
-                        : 'Unknown'}
+                      {user.date_joined
+                        ? new Date(user.date_joined).toLocaleDateString(
+                            "en-US",
+                            {
+                              year: "numeric",
+                              month: "long",
+                              day: "numeric",
+                            }
+                          )
+                        : "Unknown"}
                     </p>
                   </div>
                   <div>
                     <p className="font-medium text-gray-500">Phone</p>
                     <p>
-                      {user.phone_number 
-                        ? user.phone_number.replace(/(\d{4})(\d{4})/, '$1 $2') 
-                        : 'Not provided'}
+                      {user.phone_number
+                        ? user.phone_number.replace(/(\d{4})(\d{4})/, "$1 $2")
+                        : "Not provided"}
                     </p>
                   </div>
                   <div>
                     <p className="font-medium text-gray-500">Password</p>
                     <div className="flex items-center">
                       <span className="mr-2">••••••••</span>
-                      
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
+
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         className="text-blue-600 hover:text-blue-800"
                         onClick={() => {
                           setPasswordError(null);
-                          setOldPassword('');
-                          setNewPassword('');
+                          setOldPassword("");
+                          setNewPassword("");
                           setShowPasswordModal(true);
                         }}
                       >
@@ -368,7 +405,9 @@ export function MyListingsPage() {
                     {showPasswordModal && (
                       <div className="absolute top-0 left-0 z-50 flex items-center justify-center w-full h-full bg-black bg-opacity-50">
                         <div className="bg-white p-6 rounded-lg shadow-lg">
-                          <h2 className="text-lg font-bold mb-4">Change Password</h2>
+                          <h2 className="text-lg font-bold mb-4">
+                            Change Password
+                          </h2>
                           <input
                             type="password"
                             placeholder="Old Password"
@@ -384,20 +423,22 @@ export function MyListingsPage() {
                             className="w-full mb-4 px-3 py-2 border border-gray-300 rounded-md"
                           />
                           {passwordError && (
-                            <p className="mt-1 text-sm text-red-600">{passwordError}</p>
+                            <p className="mt-1 text-sm text-red-600">
+                              {passwordError}
+                            </p>
                           )}
                           <div className="flex justify-end">
-                            <Button 
-                              variant="outline" 
+                            <Button
+                              variant="outline"
                               className="mr-2"
                               onClick={() => {
                                 setPasswordError(null);
                                 setShowPasswordModal(false);
-                              }} 
+                              }}
                             >
                               Cancel
                             </Button>
-                            <Button 
+                            <Button
                               onClick={async () => {
                                 try {
                                   const response = await axios.post(
@@ -408,15 +449,23 @@ export function MyListingsPage() {
                                     },
                                     {
                                       headers: {
-                                        Authorization: `Token ${localStorage.getItem("authToken")}`,
+                                        Authorization: `Token ${localStorage.getItem(
+                                          "authToken"
+                                        )}`,
                                       },
                                     }
                                   );
                                   setPasswordSuccess(true);
-                                  setTimeout(() => setPasswordSuccess(false), 3000);
+                                  setTimeout(
+                                    () => setPasswordSuccess(false),
+                                    3000
+                                  );
                                   setShowPasswordModal(false);
                                 } catch (error) {
-                                  console.error("Error changing password:", error);
+                                  console.error(
+                                    "Error changing password:",
+                                    error
+                                  );
                                   if (axios.isAxiosError(error)) {
                                     const details = error.response?.data;
                                     console.log("Detailed error:", details);
@@ -426,7 +475,9 @@ export function MyListingsPage() {
                                     } else if (details?.old_password) {
                                       setPasswordError(details.old_password[0]);
                                     } else {
-                                      setPasswordError("Failed to change password. Please try again.");
+                                      setPasswordError(
+                                        "Failed to change password. Please try again."
+                                      );
                                     }
                                   }
                                 }
@@ -443,7 +494,7 @@ export function MyListingsPage() {
               </>
             )}
           </div>
-          
+
           {/* Edit/Save Buttons */}
           <div className="flex-shrink-0 self-end md:self-center">
             {isEditing ? (
@@ -525,9 +576,10 @@ export function MyListingsPage() {
                         : "bg-yellow-100 text-yellow-800"
                     }`}
                   >
-                    {listing.status ? 
-                      listing.status.charAt(0).toUpperCase() + listing.status.slice(1) :
-                      'Unknown'}
+                    {listing.status
+                      ? listing.status.charAt(0).toUpperCase() +
+                        listing.status.slice(1)
+                      : "Unknown"}
                   </span>
                 </div>
               </div>
@@ -628,46 +680,52 @@ export function MyListingsPage() {
           </div>
         ) : (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {requests.map((req) => {
-              const firstImage = req.image?.[0] || req.image;
-              const imageUrl = firstImage 
-                ? firstImage.startsWith('http') 
-                  ? firstImage 
-                  : `http://localhost:8000${firstImage}`
-                : '/placeholder.jpg';
-    
-              return (
-                <div
-                  key={req.id}
-                  className="overflow-hidden rounded-lg border bg-white shadow-sm transition-shadow hover:shadow-md cursor-pointer"
-                  onClick={() => navigate(`/requests/${req.id}`)}
-                >
-                  <div className="relative">
-                    <img
-                      // src={req.images && req.images[0]}
-                      src={imageUrl}
-                      alt={req.property?.title || req.title || "Property image"}
-                      className="h-48 w-full object-contain"
-                      onError={(e) => {
-                        const target = e.target as HTMLImageElement;
-                        target.src = '/placeholder.jpg';
-                      }}
-                    />
+            {requests
+              .filter(
+                (req): req is PropertyRequest => req.request_type === "new"
+              )
+              .map((req) => {
+                const firstImage = req.images?.[0]; // || req.image;
+                const imageUrl = firstImage
+                  ? firstImage.startsWith("http")
+                    ? firstImage
+                    : `http://localhost:8000${firstImage}`
+                  : "/placeholder.jpg";
+
+                return (
+                  <div
+                    key={req.id}
+                    className="overflow-hidden rounded-lg border bg-white shadow-sm transition-shadow hover:shadow-md cursor-pointer"
+                    onClick={() => navigate(`/requests/${req.id}`)}
+                  >
+                    <div className="relative">
+                      <img
+                        // src={req.images && req.images[0]}
+                        src={imageUrl}
+                        alt={
+                          req.property?.title || req.title || "Property image"
+                        }
+                        className="h-48 w-full object-contain"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.src = "/placeholder.jpg";
+                        }}
+                      />
+                    </div>
+                    <div className="p-4">
+                      <h3 className="mb-2 text-xl font-semibold">
+                        {req.title || "No title"}
+                      </h3>
+                      <p className="mb-4 text-gray-600">
+                        {req.location || "No location"}
+                      </p>
+                      <p className="mb-4 text-2xl font-bold text-blue-600">
+                        ${req.price ? req.price : 0}/month
+                      </p>
+                    </div>
                   </div>
-                  <div className="p-4">
-                    <h3 className="mb-2 text-xl font-semibold">
-                      {req.title || "No title"}
-                    </h3>
-                    <p className="mb-4 text-gray-600">
-                      {req.location || "No location"}
-                    </p>
-                    <p className="mb-4 text-2xl font-bold text-blue-600">
-                      ${req.price ? req.price : 0}/month
-                    </p>
-                  </div>
-                </div>
-              );
-            })}
+                );
+              })}
           </div>
         )}
       </div>
@@ -675,43 +733,47 @@ export function MyListingsPage() {
       <div className="mt-12">
         <h2 className="mb-6 text-3xl font-bold">Pending Edit Requests</h2>
         {requestsLoading ? (
-            <div className="flex justify-center items-center h-64">
-                <p>Loading edit requests...</p>
-            </div>
+          <div className="flex justify-center items-center h-64">
+            <p>Loading edit requests...</p>
+          </div>
         ) : requestsError ? (
-            <div className="mb-4 rounded-md bg-red-50 p-4 text-sm text-red-600">
-                {requestsError}
-            </div>
-        ) : requests.filter(req => req.request_type === 'update').length === 0 ? (
-            <div className="col-span-full text-center py-12">
-                <p className="text-gray-600">
-                    You have no pending edit requests
-                </p>
-            </div>
+          <div className="mb-4 rounded-md bg-red-50 p-4 text-sm text-red-600">
+            {requestsError}
+          </div>
+        ) : requests.filter((req) => req.request_type === "update").length ===
+          0 ? (
+          <div className="col-span-full text-center py-12">
+            <p className="text-gray-600">You have no pending edit requests</p>
+          </div>
         ) : (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {requests
-              .filter((req): req is PropertyRequest => req.request_type === 'update')
+              .filter(
+                (req): req is PropertyRequest => req.request_type === "update"
+              )
               .map((req) => (
                 <div
-                    key={req.id}
-                    className="overflow-hidden rounded-lg border bg-white shadow-sm transition-shadow hover:shadow-md cursor-pointer"
-                    onClick={() => navigate(`/requests/${req.id}`)}
+                  key={req.id}
+                  className="overflow-hidden rounded-lg border bg-white shadow-sm transition-shadow hover:shadow-md cursor-pointer"
+                  onClick={() => navigate(`/requests/${req.id}`)}
                 >
                   <div className="p-4">
                     <h3 className="mb-2 text-xl font-semibold">
-                      Update Request for: {req.property?.title || req.title || "Unknown Property"}
+                      Update Request for:{" "}
+                      {req.property?.title || req.title || "Unknown Property"}
                     </h3>
                     <p className="mb-4 text-gray-600">
-                        Status: Pending Approval
+                      Status: Pending Approval
                     </p>
                     <p className="mb-4 text-sm text-gray-500">
-                      Submitted on: {req.created_at ? new Date(req.created_at).toLocaleDateString() : 'Unknown date'}
+                      Submitted on:{" "}
+                      {req.created_at
+                        ? new Date(req.created_at).toLocaleDateString()
+                        : "Unknown date"}
                     </p>
                   </div>
                 </div>
-              ))
-            }
+              ))}
           </div>
         )}
       </div>
