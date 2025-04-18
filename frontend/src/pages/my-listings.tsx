@@ -39,6 +39,12 @@ export function MyListingsPage() {
     return sgPhoneRegex.test(phone.replace(/\s+/g, ''));
   };
 
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [oldPassword, setOldPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [passwordSuccess, setPasswordSuccess] = useState(false);
+
   // Fetch created listings
   useEffect(() => {
     const fetchListings = async () => {
@@ -344,15 +350,94 @@ export function MyListingsPage() {
                     <p className="font-medium text-gray-500">Password</p>
                     <div className="flex items-center">
                       <span className="mr-2">••••••••</span>
+                      
                       <Button 
                         variant="ghost" 
                         size="sm" 
                         className="text-blue-600 hover:text-blue-800"
-                        onClick={() => {/* Add password change modal here */}}
+                        onClick={() => {
+                          setPasswordError(null);
+                          setOldPassword('');
+                          setNewPassword('');
+                          setShowPasswordModal(true);
+                        }}
                       >
                         Change
                       </Button>
                     </div>
+                    {showPasswordModal && (
+                      <div className="absolute top-0 left-0 z-50 flex items-center justify-center w-full h-full bg-black bg-opacity-50">
+                        <div className="bg-white p-6 rounded-lg shadow-lg">
+                          <h2 className="text-lg font-bold mb-4">Change Password</h2>
+                          <input
+                            type="password"
+                            placeholder="Old Password"
+                            value={oldPassword}
+                            onChange={(e) => setOldPassword(e.target.value)}
+                            className="w-full mb-4 px-3 py-2 border border-gray-300 rounded-md"
+                          />
+                          <input
+                            type="password"
+                            placeholder="New Password"
+                            value={newPassword}
+                            onChange={(e) => setNewPassword(e.target.value)}
+                            className="w-full mb-4 px-3 py-2 border border-gray-300 rounded-md"
+                          />
+                          {passwordError && (
+                            <p className="mt-1 text-sm text-red-600">{passwordError}</p>
+                          )}
+                          <div className="flex justify-end">
+                            <Button 
+                              variant="outline" 
+                              className="mr-2"
+                              onClick={() => {
+                                setPasswordError(null);
+                                setShowPasswordModal(false);
+                              }} 
+                            >
+                              Cancel
+                            </Button>
+                            <Button 
+                              onClick={async () => {
+                                try {
+                                  const response = await axios.post(
+                                    `http://localhost:8000/account/update/password/`,
+                                    {
+                                      old_password: oldPassword,
+                                      new_password: newPassword,
+                                    },
+                                    {
+                                      headers: {
+                                        Authorization: `Token ${localStorage.getItem("authToken")}`,
+                                      },
+                                    }
+                                  );
+                                  setPasswordSuccess(true);
+                                  setTimeout(() => setPasswordSuccess(false), 3000);
+                                  setShowPasswordModal(false);
+                                } catch (error) {
+                                  console.error("Error changing password:", error);
+                                  if (axios.isAxiosError(error)) {
+                                    const details = error.response?.data;
+                                    console.log("Detailed error:", details);
+
+                                    if (details?.new_password) {
+                                      setPasswordError(details.new_password[0]);
+                                    } else if (details?.old_password) {
+                                      setPasswordError(details.old_password[0]);
+                                    } else {
+                                      setPasswordError("Failed to change password. Please try again.");
+                                    }
+                                  }
+                                }
+                              }}
+                            >
+                              Change
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </>
