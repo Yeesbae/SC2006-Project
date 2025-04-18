@@ -18,6 +18,7 @@ urlpatterns = [
     path('creating-request/', views.CreatePropertyRequestView.as_view(), name='create_property_request'),
     path('creating-request/<int:property_request_id>/images/', views.PropertyRequestImageUploadView.as_view(), name='upload_request_images'),
     path('updating-request/', views.UpdatePropertyRequestView.as_view(), name='update_property_request'),
+    path('updating-request/<int:property_request_id>/images/', views.PropertyRequestImageUploadView.as_view(), name='upload_update_request_images'),
     path('requests/', views.PropertyRequestListView.as_view(), name='property_requests'),
     path('requests/<int:pk>/', views.PropertyRequestDetailView.as_view(), name='property_request_detail'),
     path('requests/<int:pk>/accept/', views.AcceptPropertyRequestView.as_view(), name='accept_property_request'),

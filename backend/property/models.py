@@ -3,6 +3,7 @@ from django.core.exceptions import ValidationError
 from django.db.models import JSONField 
 
 from account.models import User
+import os
 
 def validate_non_negative(value):
     if value < 0:
@@ -38,7 +39,7 @@ class Property(models.Model):
     square_feet = models.IntegerField(default=0, validators=[validate_non_negative])
     property_type = models.CharField(max_length=20, choices=PROPERTY_TYPES, default='HDB')
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='available')
-    amenities = models.JSONField(default=dict)
+    amenities = models.JSONField(default=list, blank=True, null=True)
     description = models.TextField(blank=True, null=True)
     latitude = models.DecimalField(max_digits=20, decimal_places=14, blank=True, null=True)
     longitude = models.DecimalField(max_digits=20, decimal_places=14, blank=True, null=True)
@@ -71,6 +72,8 @@ class Property(models.Model):
         super().save(*args, **kwargs)
     
     def delete(self, *args, **kwargs):
+         for image in self.images.all():
+            image.delete()
          self.favorited_by.clear()
          super().delete(*args, **kwargs)
 
@@ -83,6 +86,12 @@ class PropertyImage(models.Model):
     image = models.ImageField(upload_to='property_images/')
     created_at = models.DateTimeField(auto_now_add=True)
 
+    def delete(self, *args, **kwargs):
+        # Delete the actual file
+        if self.image and os.path.isfile(self.image.path):
+            os.remove(self.image.path)
+        super().delete(*args, **kwargs)
+
 # property request
 class PropertyRequest(models.Model):
     REQUEST_TYPE_CHOICES = [
@@ -94,7 +103,7 @@ class PropertyRequest(models.Model):
     property = models.ForeignKey(Property, on_delete=models.CASCADE, null=True, blank=True)
     
     # user = models.ForeignKey(User, on_delete=models.CASCADE)
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='property_requests', default=None)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='property_requests', default=None, null=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
     # Snapshot fields for new property requests.
@@ -121,7 +130,7 @@ class PropertyRequest(models.Model):
         blank=True,
         null=True
     )
-    amenities = models.JSONField(default=dict, blank=True, null=True)
+    amenities = models.JSONField(default=list, blank=True, null=True)
     description = models.TextField(blank=True, null=True)
     latitude = models.DecimalField(max_digits=20, decimal_places=14, blank=True, null=True)
     longitude = models.DecimalField(max_digits=20, decimal_places=14, blank=True, null=True)
@@ -174,3 +183,9 @@ class PropertyRequestImage(models.Model):
     property = models.ForeignKey(PropertyRequest, related_name='images', on_delete=models.CASCADE)
     image = models.ImageField(upload_to='property_request_images/')
     created_at = models.DateTimeField(auto_now_add=True)
+
+    def delete(self, *args, **kwargs):
+        # Delete the actual file
+        if self.image and os.path.isfile(self.image.path):
+            os.remove(self.image.path)
+        super().delete(*args, **kwargs)

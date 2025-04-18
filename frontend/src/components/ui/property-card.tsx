@@ -12,7 +12,7 @@ interface PropertyCardProps {
   bathrooms: number;
   square_feet: number;
   type: string;
-  images: string;
+  images: string[];
   isNew?: boolean;
 }
 
@@ -25,10 +25,11 @@ export function PropertyCard({
   bathrooms = 0,
   square_feet: sqft = 0,
   type,
-  images = '/placeholder.jpg',
+  images = [],
   isNew = false,
 }: PropertyCardProps) {
   const [isFavorite, setIsFavorite] = useState(false);
+  const thumbnail = images.length > 0 ? images[0] : '/placeholder.jpg';
 
   const formatPrice = (price: number) => {
     if (price >= 1000) {
@@ -82,7 +83,7 @@ export function PropertyCard({
       {/* Property Image */}
       <div className="relative">
         <PropertyImage
-          src={images}
+          src={thumbnail}
           alt={title}
           aspectRatio="3/2"
           className="w-full transition-transform duration-300 group-hover:scale-105 object-contain"

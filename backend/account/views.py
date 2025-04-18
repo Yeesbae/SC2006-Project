@@ -1,5 +1,5 @@
 from django.shortcuts import render
-from rest_framework import viewsets, generics
+from rest_framework import viewsets, generics, permissions
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from rest_framework import status
@@ -8,6 +8,8 @@ from rest_framework.permissions import IsAuthenticated
 from django.contrib.auth import authenticate
 from rest_framework.authtoken.models import Token
 from django.shortcuts import get_object_or_404
+from .serializer import ChangePasswordSerializer
+
 
 from .models import *
 from .serializer import *
@@ -48,20 +50,47 @@ class RegisterUserView(generics.CreateAPIView):
                 status=status.HTTP_201_CREATED
             )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+class ChangePasswordView(generics.UpdateAPIView):
+    serializer_class = ChangePasswordSerializer
+    model = User
+    permission_classes = [permissions.IsAuthenticated]
 
-# update a user's profile
-class UpdateUserView(generics.UpdateAPIView):
-    queryset = User.objects.all()
-    serializer_class = UserSerializer
+    def get_object(self):
+        return self.request.user
+
+    def post(self, request, *args, **kwargs):
+        serializer = ChangePasswordSerializer(data=request.data, context={'request': request})
+        if serializer.is_valid():
+            user = request.user
+            user.set_password(serializer.validated_data['new_password'])
+            user.save()
+            return Response({"detail": "Password updated successfully."}, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+# update user's details (including password)
+class UpdateUserDetailsView(generics.UpdateAPIView):
+    serializer_class = UpdateUserDetailsSerializer
     permission_classes = [IsAuthenticated]
     authentication_classes = [TokenAuthentication]
     
     def get_object(self):
         return self.request.user
-    def put(self, request, *args, **kwargs):
-        return self.update(request, *args, **kwargs)
-    def patch(self, request, *args, **kwargs):
-        return self.partial_update(request, *args, **kwargs)
+    
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=True)
+        
+        if serializer.is_valid():
+            user = serializer.save()
+            
+            return Response({
+                "message": "User details updated successfully",
+                "username": user.username,
+                "email": user.email,
+                "name": user.name,
+            }, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 # delete a user's profile
 class DeleteUserView(generics.DestroyAPIView):
@@ -87,7 +116,7 @@ class LoginUserView(generics.GenericAPIView):
         
         if user:
             token, created = Token.objects.get_or_create(user=user)
-            return Response({"token": token.key, "message": "Login successful"}, status=200)
+            return Response({"token": token.key, "is_staff": user.is_staff, "message": "Login successful"}, status=200)
         return Response({"message": "Invalid credentials"}, status=400)
     
 # logout a user
