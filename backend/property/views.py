@@ -8,13 +8,15 @@ from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny
 from rest_framework.parsers import MultiPartParser, FormParser
 
-
+from django.core.files import File
+from django.conf import settings
 from django.shortcuts import get_object_or_404, render
 
 from .models import *
 from .serializer import *
 
 import os
+import shutil
 class TokenVerifyView(APIView):
     permission_classes = [IsAuthenticated]  # Ensure that only authenticated users can access this view
 
@@ -117,7 +119,7 @@ class PropertyListView(generics.ListAPIView):
         serializer = self.get_serializer(properties, many=True)
         
         # Debugging: Print the serialized data to check if images are included
-        print("Serialized Properties Data:", serializer.data)
+        # print("Serialized Properties Data:", serializer.data)
         
         return Response(serializer.data)
 
@@ -153,12 +155,15 @@ class PropertyDeleteView(generics.DestroyAPIView):
             }, status=status.HTTP_403_FORBIDDEN)
         
         for image in instance.images.all():
-            if image.image and os.path.isfile(image.image.path):
-                os.remove(image.image.path)
+            image_path = image.image.path
+            print("Image Path: ", image_path)
+
+            if os.path.isfile(image_path):
+                os.remove(image_path)
             image.delete()
 
         instance.delete()
-        self.perform_destroy(instance) # not sure will this work with the code above (might need to remove the one above)
+        self.perform_destroy(instance)
         return Response({
             "message": "Property deleted successfully"
         }, status=status.HTTP_200_OK)
@@ -220,10 +225,14 @@ class CreatePropertyRequestView(generics.CreateAPIView):
 # request for updating a property
 class UpdatePropertyRequestView(generics.CreateAPIView):
     queryset = PropertyRequest.objects.all()
-    serializer_class = UpdatePropertyRequestSerializer
     permission_classes = [IsAuthenticated]
     authentication_classes = [TokenAuthentication]
-    
+        
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context['request'] = self.request
+        return context
+
     def create(self, request, *args, **kwargs):
         # check if the request user is the owner of the property
         property_id = request.data.get('property_id')
@@ -235,6 +244,25 @@ class UpdatePropertyRequestView(generics.CreateAPIView):
                     },
                     status=status.HTTP_403_FORBIDDEN
                 )
+        
+            request_data = request.data.copy()
+            request_data['request_type'] = 'update'
+            request_data['property'] = property_obj.id
+            request_data['user'] = request.user.id
+
+            serializer = self.get_serializer(data=request_data)
+
+            if serializer.is_valid():
+                # property_request = serializer.save(user=request.user, request_type='update', property=property_obj)
+                property_request = serializer.save()
+                return Response({
+                        "message": "Property update request created successfully",
+                        "property_request": serializer.data,
+                        "id": property_request.id
+                    },
+                    status=status.HTTP_201_CREATED
+                )
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         except Property.DoesNotExist:
             return Response({
                     "message": "Property not found"
@@ -242,15 +270,11 @@ class UpdatePropertyRequestView(generics.CreateAPIView):
                 status=status.HTTP_404_NOT_FOUND
             )
         
-        serializer = self.get_serializer(data=request.data)
+    def post(self, request):
+        serializer = UpdatePropertySerializer(data=request.data, context={'request': request})
         if serializer.is_valid():
-            property_request = serializer.save(user=request.user, request_type='update', property=property_obj)
-            return Response({
-                    "message": "Property update request created successfully",
-                    "property_request": serializer.data
-                },
-                status=status.HTTP_201_CREATED
-            )
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 # view all property requests
@@ -281,7 +305,7 @@ class PropertyRequestDetailView(generics.RetrieveAPIView):
         if not property_request.exists():
             return Response({"message": "Property request not found"}, status=status.HTTP_404_NOT_FOUND)
         
-        if request.user.is_staff or request.user.is_superuser or request.user == property_request.user:
+        if request.user.is_staff or request.user.is_superuser or request.user == property_request.first().user:
             return property_request
         else:
             return Response({"message": "You do not have permission to view this request"}, status=status.HTTP_403_FORBIDDEN)
@@ -333,13 +357,14 @@ class AcceptPropertyRequestView(generics.GenericAPIView):
                 property_instance = property_serializer.save()
             else:
                 return Response(property_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        
+            pass
         # if request type is update, update the existing property
-        else:
+        elif property_request.request_type == 'update':
             # check if the property exists
             try:
                 print("Updating existing property...")
                 print(property_request.property)
+                # property_instance = PropertyRequest.objects.get(id=property_request.property.id)
                 property_instance = Property.objects.get(id=property_request.property.id)
                 # Build update data from the property_request snapshot
                 update_data = {
@@ -365,22 +390,45 @@ class AcceptPropertyRequestView(generics.GenericAPIView):
                 property_serializer = UpdatePropertySerializer(property_instance, data=update_data, partial=True)
                 
                 if property_serializer.is_valid():
-                    
                     property_instance = property_serializer.save()
-                    print("Property Instance: ", property_instance)
                 else:
                     return Response(property_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
             except Property.DoesNotExist:
                 return Response({"message": "Property not found"}, status=status.HTTP_404_NOT_FOUND)
-        # delete the property request
-        # move image to property_images inside media
+            
         for property_request_image in property_request.images.all():
-            # Step 2: Create new PropertyImage instances
-            PropertyImage.objects.create(property=property_instance, image=property_request_image.image)
-        
+            original_path = property_request_image.image.path
+            original_name = os.path.basename(property_request_image.image.name)
+            
+            new_relative_path = f'property_images/{original_name}'
+            new_full_path = os.path.join(settings.MEDIA_ROOT, new_relative_path)
+            
+            os.makedirs(os.path.dirname(new_full_path), exist_ok=True)
+            
+            shutil.copy2(original_path, new_full_path)
+            
+            with open(new_full_path, 'rb') as f:
+                django_file = File(f)
+                image_instance = PropertyImage(property=property_instance)
+                image_instance.image.save(original_name, django_file, save=True)
+            
+            # Delete the original file and record
+            os.remove(original_path)
+            property_request_image.delete()
+
+            all_files = os.listdir(os.path.join(settings.MEDIA_ROOT, 'property_images'))
+            valid_files = PropertyImage.objects.values_list('image', flat=True)
+
+            for file in all_files:
+                if f'property_images/{file}' not in valid_files:
+                    try:
+                        os.remove(os.path.join(settings.MEDIA_ROOT, 'property_images', file))
+                    except Exception as e:
+                        print(f"Failed to remove {file}: {str(e)}")
+
         # Step 3: Delete PropertyRequestImage instances after moving
         property_request.images.all().delete()
-        property_request.delete()
+        property_request.delete() 
         return Response({"message": "Property request accepted successfully"}, status=status.HTTP_200_OK)
 
 # reject a property request by id (for admin/staff/superuser only)

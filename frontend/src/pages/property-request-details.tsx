@@ -41,7 +41,7 @@ export function mergeProperties(
         ? snapshot.amenities
         : original.amenities,
     description: snapshot.description ?? original.description,
-    image: snapshot.image ?? original.image,
+    images: snapshot.images ?? original.images,
     address: snapshot.address ?? original.address,
     latitude: snapshot.latitude ?? original.latitude,
     longitude: snapshot.longitude ?? original.longitude,
@@ -60,6 +60,28 @@ export function PropertyRequestDetails() {
 
   const [property_rq, setPropertyRq] = useState<PropertyRequest | null>(null);
   const [priceHistory, setPriceHistory] = useState<PriceHistoryEntry[]>([]);
+
+  const [currentUser, setUser] = useState<any | null>(null);
+
+  const fetchUser = async () => {
+    try {
+      const response = await axios.get(
+        "http://127.0.0.1:8000/account/users/me/",
+        {
+          headers: { Authorization: `Token ${token}` },
+        }
+      );
+      setUser(response.data);
+    } catch (error) {
+      console.error("Error fetching user:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchUser();
+  }, [token]);
+
+  // console.log(currentUser);
 
   const fetchPropertyRq = async () => {
     try {
@@ -175,12 +197,13 @@ export function PropertyRequestDetails() {
         status: property_rq.status || "available",
         amenities: property_rq.amenities || [],
         description: property_rq.description || "",
-        image: property_rq.image || "",
+        images: property_rq.images || [],
         address: property_rq.address || "",
         latitude: property_rq.latitude || null,
         longitude: property_rq.longitude || null,
         created_at: property_rq.created_at || "",
         updated_at: property_rq.created_at || "",
+        request_type: property_rq.request_type || "default_request_type", // Add request_type with a default or derived value
       };
     }
   }
@@ -236,6 +259,29 @@ export function PropertyRequestDetails() {
 
   return (
     <div className="min-h-screen bg-gray-100">
+      <nav className="bg-white shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between h-16">
+            <div className="flex items-center">
+              <span className="ml-2 text-xl font-semibold">
+                Property Details
+              </span>
+            </div>
+            <button
+              onClick={() =>
+                currentUser.is_staff == true
+                  ? navigate("/admin")
+                  : navigate("/my-listings")
+              }
+              className="flex items-center text-gray-600 hover:text-gray-900"
+            >
+              <ArrowLeft className="h-5 w-5 mr-1" />
+              Back to Dashboard
+            </button>
+          </div>
+        </div>
+      </nav>
+
       <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         <div className="px-4 py-6 sm:px-0">
           <div className="bg-white shadow overflow-hidden sm:rounded-lg">
@@ -336,22 +382,34 @@ export function PropertyRequestDetails() {
             </div>
           </div>
 
-          <div className="mt-8 flex justify-end space-x-4">
-            <button
-              onClick={() => handleApprove(property_rq.id)}
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700"
-            >
-              <CheckCircle className="h-5 w-5 mr-2" />
-              Approve Property
-            </button>
-            <button
-              onClick={() => handleDeny(property_rq.id)}
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700"
-            >
-              <XCircle className="h-5 w-5 mr-2" />
-              Deny Property
-            </button>
-          </div>
+          {currentUser.is_staff == true ? (
+            <div className="mt-8 flex justify-end space-x-4">
+              <button
+                onClick={() => handleApprove(property_rq.id)}
+                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700"
+              >
+                <CheckCircle className="h-5 w-5 mr-2" />
+                Approve Property
+              </button>
+              <button
+                onClick={() => handleDeny(property_rq.id)}
+                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700"
+              >
+                <XCircle className="h-5 w-5 mr-2" />
+                Deny Property
+              </button>
+            </div>
+          ) : (
+            <div className="mt-8 flex justify-end space-x-4">
+              <button
+                onClick={() => navigate("/my-listings")}
+                className="flex items-center text-gray-600 hover:text-gray-900"
+              >
+                <ArrowLeft className="h-5 w-5 mr-1" />
+                Back to My listings
+              </button>
+            </div>
+          )}
         </div>
       </main>
     </div>

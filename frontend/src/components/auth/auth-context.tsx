@@ -9,6 +9,12 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 
 interface User {
+  first_name: string;
+  last_name: string;
+  is_active: boolean;
+  date_joined: string;
+  phone_number: string;
+  last_login: string | null;
   id: number;
   username: string;
   email: string;
@@ -20,15 +26,15 @@ interface AuthContextType {
   isAuthenticated: boolean;
   login: (token: string, userData: User) => void;
   logout: () => void;
+  setUser: (user: User | null) => void
 }
-
-// const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
   isAuthenticated: false,
-  login: () => {},
-  logout: () => {},
+  login: () => { },
+  logout: () => { },
+  setUser: () => {}
 });
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -95,7 +101,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // console.log('AuthProvider:', { user, isAuthenticated });
   return (
-    <AuthContext.Provider value={{ isAuthenticated, login, logout, user }}>
+    <AuthContext.Provider value={{ isAuthenticated, login, logout, user, setUser }}>
       {children}
     </AuthContext.Provider>
   );
