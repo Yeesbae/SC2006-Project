@@ -26,7 +26,7 @@ This is how you create a local version of this platform.
 
 Clone this repository
    ```sh
-   https://github.com/ngvanthanggit/SC2006-Project.git
+   git clone https://github.com/ngvanthanggit/SC2006-Project.git
    ```
 ### Backend Setup
 1. Create Virtual Environment
