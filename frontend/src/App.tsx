@@ -12,7 +12,7 @@ import { PropertyDetailsPage } from "./pages/property-details";
 import { RegisterPage } from "./pages/register";
 import { AuthProvider } from "./components/auth/auth-context";
 import { AdminDashboard } from "./pages/admin-dashboard";
-import { PropertyRequestDetails } from "./pages/PropertyRequestDetails";
+import { PropertyRequestDetails } from "./pages/property-request-details";
 
 function App() {
   return (

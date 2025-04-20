@@ -119,7 +119,7 @@ class PropertyListView(generics.ListAPIView):
         serializer = self.get_serializer(properties, many=True)
         
         # Debugging: Print the serialized data to check if images are included
-        print("Serialized Properties Data:", serializer.data)
+        # print("Serialized Properties Data:", serializer.data)
         
         return Response(serializer.data)
 
@@ -305,7 +305,7 @@ class PropertyRequestDetailView(generics.RetrieveAPIView):
         if not property_request.exists():
             return Response({"message": "Property request not found"}, status=status.HTTP_404_NOT_FOUND)
         
-        if request.user.is_staff or request.user.is_superuser or request.user == property_request.user:
+        if request.user.is_staff or request.user.is_superuser or request.user == property_request.first().user:
             return property_request
         else:
             return Response({"message": "You do not have permission to view this request"}, status=status.HTTP_403_FORBIDDEN)
